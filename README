@@ -1,0 +1,14 @@
+mpauth.py
+
+mod_python library cribbed from mpopenid.py
+Apache form-based authentication using mod_python.
+Requires python 2.4 or higher, mod_python, and
+the ipaddr.py library from Google.
+
+Access granted either by username and password,
+or with the allow-from option that whitelists
+network subnets. 
+
+To use, replace is_authentic method with a real
+database, .htpasswd, or ldap lookup or other
+way to verify user.
