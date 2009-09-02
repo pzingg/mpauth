@@ -153,6 +153,7 @@ cookie_version = 'v1'
 
 message_text = {
     'empty':('message',  'Enter a user name and password to continue'),
+    'credentials':('message', 'User name and password not found.  Please try again.'),
     'cancel':('message', 'Authorization cancelled'),
     'http_failed':('error',
                    'There was an error communicating with the server'),
@@ -548,7 +549,7 @@ class AuthLogin(LoginAccessRequest):
         if login is not None and password is not None and self.is_authentic(login, password):
             response = 'SUCCESS' 
         if response is None:
-            self.loginRedirect(message='failure')
+            self.loginRedirect(message='credentials')
         elif response == 'SUCCESS':
             # Set the cookie and then redirect back to the target
             self.cookied_user = login
