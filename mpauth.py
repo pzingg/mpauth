@@ -361,6 +361,7 @@ class AuthLogin(LoginAccessRequest):
     # login
     auto_login_lifetime = 24 * 60 * 60 * 365
     
+    # TODO: encrypt username and other info in cookie
     def getLastUser(self):
         cookies = Cookie.get_cookies(self.apache_request)
         cookie = cookies.get('mpauth.last_user')
@@ -375,18 +376,19 @@ class AuthLogin(LoginAccessRequest):
             return None
         return user
 
+    # TODO: decrypt username and other info from cookie
     def setLastUser(self, username):
         assert isinstance(username, basestring)
         expires = time.time() + self.auto_login_lifetime
         value = '%s~~%s' % (username, cookie_version) 
         Cookie.add_cookie(self.apache_request,
             'mpauth.last_user', value, path='/', expires=expires)
-        self.apache_request.log_error('Set last user: %s' % value)
+        # self.apache_request.log_error('Set last user: %s' % value)
 
     def delLastUser(self):
         Cookie.add_cookie(
             self.apache_request, 'mpauth.last_user', '', path='/', expires=0)
-        self.apache_request.log_error('Deleted last user')
+        # self.apache_request.log_error('Deleted last user')
 
     def fillLoginPage(self, login, messages):
         """Generate the HTML for the login page
