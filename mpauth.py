@@ -13,17 +13,20 @@ For example, Alice has two directories, one "private" and one
 up each of the other directories separately::
 
 <Directory "/var/www/friends">
+    PythonOption ApplicationPath "/"
     PythonOption action-path "/auth"
     PythonAccessHandler mpauth::protect
 </Directory>
 
 <Directory "/var/www/private">
+    PythonOption ApplicationPath "/"
     PythonOption action-path "/auth"
     PythonAccessHandler mpauth::protect
 </Directory>
 
 <Location "/auth">
     SetHandler mod_python
+    PythonOption ApplicationPath "/"
     PythonOption action-path "/auth"
     PythonOption hello-path "/auth/hello"
     PythonOption goodbye-path "/auth/goodbye"
@@ -33,8 +36,14 @@ up each of the other directories separately::
 Session Keys
 ============
 
-This module uses mod_python sessions. This is an overview of the data
-that is stored in the session:
+This module uses mod_python sessions. In order for parts of the 
+application to share session information, you must set:
+
+PythonOption ApplicationPath "/"
+
+In the Apache Location/Directive/.htaccess configurations.
+
+This is an overview of the data that is stored in the session:
 
   `cookied_user` (login user name (unicode or str))
 
@@ -271,6 +280,7 @@ class LoginAccessRequest(object):
             apache_request,
             timeout=self.session_timeout,
             lock=False)
+        self.session.load()
 
     def get_cookied_user(self):
         """Get the user cookie for this request
@@ -334,12 +344,13 @@ class LoginAccessRequest(object):
         if logout:
             location = self.targetURL('goodbye')
             self.session['target'] = None
-            self.apache_request.log_error('Logout - session target cleared')
+            # self.apache_request.log_error('Logout - session target cleared')
         else:
             location = self.actionURL('login')
             if target:
                 self.session['target'] = target
-                self.apache_request.log_error('Login - session target set to %s' % target)
+                # self.apache_request.log_error('Login - session target set to %s' % target)
+        self.session.save()
         self.redirect(location)
 
     def redirect(self, url):
@@ -422,7 +433,7 @@ class AuthLogin(LoginAccessRequest):
                 '<code>%s</code></div>') % (escape(target),)
         else:
             resource = ''
-            self.apache_request.log_error('Fill login - no session target')
+            # self.apache_request.log_error('Fill login - no session target')
 
         if not login:
             login = ''
@@ -564,9 +575,10 @@ class AuthLogin(LoginAccessRequest):
             target = self.session.get('target')
             if not target:
                 target = self.targetURL('hello')
-                self.apache_request.log_error('No session target, using hello: %s' % target)
+                # self.apache_request.log_error('No session target, using hello: %s' % target)
             self.session['target'] = None
-            self.apache_request.log_error('Success/redirect - session target cleared')
+            # self.apache_request.log_error('Success/redirect - session target cleared')
+            self.session.save()
             self.redirect(target)
         elif response == 'CANCEL':
             self.loginRedirect('cancel')
