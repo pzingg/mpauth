@@ -555,7 +555,6 @@ class AuthLogin(LoginAccessRequest):
         """
         
         return True
-    end
 
     def authenticate_login(self, login, password):
         """Handle a response from the login form. Always redirects.
