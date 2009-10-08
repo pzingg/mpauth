@@ -36,7 +36,7 @@ Session Keys
 This module uses mod_python sessions. This is an overview of the data
 that is stored in the session:
 
-  `cookied_user` (OpenID identifier (unicode or str))
+  `cookied_user` (login user name (unicode or str))
 
     If present, this is the currently logged in user. This is set
     upon successful login and cleared when logout is called.
@@ -175,7 +175,8 @@ hello_page_tmpl = '''\
      </style>
   </head>
   <body><h1>Welcome</h1>
-  <p>You are now logged in.</p>
+  <p>You are now logged in.  You should be able to go back and access the page
+  you originally were requesting.</p>
   <p><a href="$logout">Log out</a></p>
   </body>
 </html>
@@ -327,15 +328,18 @@ class LoginAccessRequest(object):
 
         (mod_python.Request, str or NoneType, str or NoneType) ->
             apache.SERVER_RETURN"""
-        if target:
-            self.session['target'] = target
         self.session['message'] = message
         self.session['logout'] = logout
         location = None
         if logout:
             location = self.targetURL('goodbye')
+            self.session['target'] = None
+            self.apache_request.log_error('Logout - session target cleared')
         else:
             location = self.actionURL('login')
+            if target:
+                self.session['target'] = target
+                self.apache_request.log_error('Login - session target set to %s' % target)
         self.redirect(location)
 
     def redirect(self, url):
@@ -418,6 +422,7 @@ class AuthLogin(LoginAccessRequest):
                 '<code>%s</code></div>') % (escape(target),)
         else:
             resource = ''
+            self.apache_request.log_error('Fill login - no session target')
 
         if not login:
             login = ''
@@ -551,7 +556,7 @@ class AuthLogin(LoginAccessRequest):
         if login is not None and password is not None and self.is_authentic(login, password):
             response = 'SUCCESS' 
         if response is None:
-            self.loginRedirect(message='credentials')
+            self.loginRedirect('credentials')
         elif response == 'SUCCESS':
             # Set the cookie and then redirect back to the target
             self.cookied_user = login
@@ -559,12 +564,14 @@ class AuthLogin(LoginAccessRequest):
             target = self.session.get('target')
             if not target:
                 target = self.targetURL('hello')
+                self.apache_request.log_error('No session target, using hello: %s' % target)
             self.session['target'] = None
+            self.apache_request.log_error('Success/redirect - session target cleared')
             self.redirect(target)
         elif response == 'CANCEL':
-            self.loginRedirect(message='cancel')
+            self.loginRedirect('cancel')
         elif response == 'FAILURE':
-            self.loginRedirect(message='failure')
+            self.loginRedirect('failure')
         else:
             assert False, response
             
@@ -660,7 +667,7 @@ class LoginProtect(LoginAccessRequest):
                     (self.cookied_user, request_uri))
                 message = 'denied'
         else:
-            # Initial request with no openid_identifier cookie, so no message.
+            # Initial request with no user cookie, so no message.
             message = None
 
         # The redirects only work for GET, so just return FORBIDDEN if
