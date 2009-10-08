@@ -280,7 +280,6 @@ class LoginAccessRequest(object):
             apache_request,
             timeout=self.session_timeout,
             lock=False)
-        self.session.load()
 
     def get_cookied_user(self):
         """Get the user cookie for this request
@@ -350,7 +349,6 @@ class LoginAccessRequest(object):
             if target:
                 self.session['target'] = target
                 # self.apache_request.log_error('Login - session target set to %s' % target)
-        self.session.save()
         self.redirect(location)
 
     def redirect(self, url):
@@ -577,7 +575,6 @@ class AuthLogin(LoginAccessRequest):
                 # self.apache_request.log_error('No session target, using hello: %s' % target)
             self.session['target'] = None
             # self.apache_request.log_error('Success/redirect - session target cleared')
-            self.session.save()
             self.redirect(target)
         elif response == 'CANCEL':
             self.loginRedirect('cancel')
